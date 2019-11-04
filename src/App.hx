@@ -19,6 +19,7 @@ class App extends pixi.core.Application {
 		'images/oreo_1.png',
 		'images/oreo_2.png',
 		'images/marshmallow_0.png',
+		'images/floor.png',
 		'images/bg.png',
 		'images/score.fnt',
 		'images/text.fnt',

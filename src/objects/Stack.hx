@@ -1,5 +1,6 @@
 package objects;
 
+import pixi.core.sprites.Sprite;
 import com.greensock.easing.Linear;
 import states.PlayState;
 import pixi.core.display.DisplayObject;
@@ -32,10 +33,13 @@ class Stack extends Container {
 	}
 
 	function add_floor() {
-		var floor = new Graphics();
+		var floor = Sprite.fromImage('images/floor.png');
+		floor.scale.set(App.i.renderer.width/128, App.i.renderer.height/2/128);
+		floor.position.set(-App.i.renderer.width/2, -48);
+		/*var floor = new Graphics();
 		floor.beginFill(0x47C9F3);
 		floor.drawRect(-App.i.renderer.width, -128, App.i.renderer.width * 2, App.i.renderer.height);
-		floor.endFill();
+		floor.endFill();*/
 		addChild(floor);
 	}
 

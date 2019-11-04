@@ -119,10 +119,10 @@ App.main = function() {
 		load_assets();
 	} else {
 		WebFont.load({ custom : { families : App.fonts, urls : ["include/fonts.css"]}, active : load_assets, inactive : function() {
-			haxe_Log.trace("uh oh",{ fileName : "src/App.hx", lineNumber : 40, className : "App", methodName : "main"});
+			haxe_Log.trace("uh oh",{ fileName : "src/App.hx", lineNumber : 41, className : "App", methodName : "main"});
 			return;
 		}, timeout : 1000, fontloading : function(family,fvd) {
-			haxe_Log.trace(family,{ fileName : "src/App.hx", lineNumber : 42, className : "App", methodName : "main"});
+			haxe_Log.trace(family,{ fileName : "src/App.hx", lineNumber : 43, className : "App", methodName : "main"});
 			return;
 		}});
 	}
@@ -2757,10 +2757,9 @@ objects_Stack.prototype = $extend(PIXI.Container.prototype,{
 	,item_tween: null
 	,has_moved: null
 	,add_floor: function() {
-		var floor = new PIXI.Graphics();
-		floor.beginFill(4704755);
-		floor.drawRect(-App.i.renderer.width,-128,App.i.renderer.width * 2,App.i.renderer.height);
-		floor.endFill();
+		var floor = PIXI.Sprite.fromImage("images/floor.png");
+		floor.scale.set(App.i.renderer.width / 128,App.i.renderer.height / 2 / 128);
+		floor.position.set(-App.i.renderer.width / 2,-48);
 		this.addChild(floor);
 	}
 	,add_items: function() {
@@ -7221,7 +7220,7 @@ if(ArrayBuffer.prototype.slice == null) {
 	ArrayBuffer.prototype.slice = js_lib__$ArrayBuffer_ArrayBufferCompat.sliceImpl;
 }
 App.fonts = [];
-App.assets = ["images/oreo_0.png","images/oreo_1.png","images/oreo_2.png","images/marshmallow_0.png","images/bg.png","images/score.fnt","images/text.fnt"];
+App.assets = ["images/oreo_0.png","images/oreo_1.png","images/oreo_2.png","images/marshmallow_0.png","images/floor.png","images/bg.png","images/score.fnt","images/text.fnt"];
 App.initial_obj = states_PlayState;
 DateTools.DAY_SHORT_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 DateTools.DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
