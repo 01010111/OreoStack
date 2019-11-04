@@ -1,5 +1,6 @@
 package objects;
 
+import pixi.core.textures.Texture;
 import states.PlayState;
 import zero.utilities.Timer;
 import objects.Stack.IncomingDirection;
@@ -24,13 +25,24 @@ class Player extends Graphics {
 		switch v {
 			case LANDED:
 				scale.to(0.4, { x: 1, y: 1, ease: Elastic.easeOut });
+				for (i in 0...4) {
+					var v = Vec2.get(500);
+					v.angle = 45 + i * 360/4;
+					PlayState.instance.poofs.fire({
+						position: [x, y] + v.copy() * 0.1 + [0, 48],
+						timer: 0.5,
+						velocity: v * [1, 0.25],
+					});
+				}
 			case JUMPING:
 			case KNOCKED:
-				velocity.x = fall_dir == LEFT ? -50 : 50;
-				velocity.y = -500;
+				velocity.x = fall_dir == LEFT ? -200 : 200;
+				velocity.y = -800;
 				this.to(1, { rotation: fall_dir == LEFT ? -1 : 1 });
 				Timer.get(2, () -> PlayState.instance.end());
+				sprite.texture = Texture.fromImage('images/marshmallow_1.png');
 			case FALLING:
+				sprite.texture = Texture.fromImage('images/marshmallow_1.png');
 				Timer.get(2, () -> PlayState.instance.end());
 		}
 		return state = v;
@@ -80,7 +92,7 @@ class Player extends Graphics {
 
 	function do_first_jump() {
 		first_jump = false;
-		PlayState.instance.score.scale.to(0.5, { x: 1, y: 1, ease: Elastic.easeOut });
+		PlayState.instance.begin();
 	}
 
 	function fall() {

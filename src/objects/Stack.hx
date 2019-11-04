@@ -1,5 +1,6 @@
 package objects;
 
+import zero.utilities.Vec2;
 import pixi.core.sprites.Sprite;
 import com.greensock.easing.Linear;
 import states.PlayState;
@@ -80,11 +81,32 @@ class Stack extends Container {
 
 	public function is_solid():Bool {
 		if (!has_moved) return true;
-		return (top_item.x).abs() < StackItem.item_width/2;
-		return switch state {
-			case SOLID: true;
-			case MOVING: (top_item.x - App.i.renderer.width/2).abs() < StackItem.item_width/2;
+		var solid = top_item.x.abs() < StackItem.item_width/2;
+		if (top_item.x.abs() < 16) shoot_confetti();
+		return solid;
+	}
+
+	function shoot_confetti() {
+		PlayState.instance.score_amt += 9;
+		for (i in 0...16) {
+			var v:Vec2 = [20.get_random(-20), -(3000.get_random(1600))];
+			PlayState.instance.confetti.fire({
+				position: [App.i.renderer.width.get_random(), App.i.renderer.height.get_random()],
+				velocity: v,
+				timer: 0.25,
+			});
 		}
+		Timer.get(0.4, () -> {
+			for (i in 0...48) {
+				var v:Vec2 = [400.get_random(200)];
+				v.angle = 135.get_random_gaussian(45);
+				PlayState.instance.confetti.fire({
+					position: [App.i.renderer.width.get_random(), App.i.renderer.height.get_random(-512)],
+					velocity: v,
+					timer: 1.5,
+				});
+			}
+		});
 	}
 
 	public function cancel_tween() {

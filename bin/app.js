@@ -15,9 +15,12 @@ var states_PlayState = function() {
 	zero_utilities_EventBus.register_listener($bind(this,this.resize),"resize");
 	this.addChild(objects_Background.make());
 	this.addChild(this.stack = new objects_Stack());
+	this.addChild(this.poofs = new particles_Poofs());
 	this.addChild(this.player = new objects_Player());
 	this.addChild(this.fader = objects_Background.make());
 	this.addChild(this.score = new PIXI.extras.BitmapText("0",{ font : "Oduda", align : "center"}));
+	this.addChild(this.confetti = new particles_Confetti());
+	this.addChild(this.get_instructions());
 	TweenMax.to(this.fader,1,{ alpha : 0});
 	this.score.scale.set(0);
 	this.score.rotation = -0.1;
@@ -32,14 +35,29 @@ states_PlayState.__super__ = PIXI.Container;
 states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 	player: null
 	,stack: null
+	,instructions: null
 	,score: null
 	,score_amt: null
 	,fader: null
+	,poofs: null
+	,confetti: null
 	,set_score_amt: function(n) {
 		this.score.text = "" + n;
 		this.score.scale.set(1.5);
 		TweenMax.to(this.score.scale,0.75,{ x : 1, y : 1, ease : Elastic.easeOut});
 		return this.score_amt = n;
+	}
+	,get_instructions: function() {
+		this.instructions = new PIXI.extras.BitmapText("Tap anywhere to begin!",{ font : "MainText", tint : 547009});
+		this.instructions.anchor.set(0.5);
+		this.instructions.position.set(App.i.renderer.width / 2,App.i.renderer.height - 128);
+		this.instructions.scale.set(0);
+		TweenMax.to(this.instructions.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut, delay : 0.5});
+		return this.instructions;
+	}
+	,begin: function() {
+		TweenMax.to(this.score.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut});
+		TweenMax.to(this.instructions.scale,0.5,{ x : 0, y : 0, ease : Back.easeIn});
 	}
 	,resize: function(_) {
 	}
@@ -53,10 +71,20 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 			hi = this.score_amt;
 			js_Cookie.set("top",Std.string(this.score_amt),315360000);
 		}
-		haxe_Log.trace("hi score: " + hi,{ fileName : "src/states/PlayState.hx", lineNumber : 64, className : "states.PlayState", methodName : "end"});
+		haxe_Log.trace("hi score: " + hi,{ fileName : "src/states/PlayState.hx", lineNumber : 90, className : "states.PlayState", methodName : "end"});
 		TweenMax.to(this.fader,5,{ alpha : 0.75});
 		TweenMax.to(this.score,1,{ y : App.i.renderer.height * 0.3, ease : Back.easeOut});
-		TweenMax.to(this.score.scale,0.5,{ x : 1.5, y : 1.5, ease : Elastic.easeOut, delay : 1.25});
+		zero_utilities_Timer.get(1,function() {
+			TweenMax.to(_gthis.score.scale,0.5,{ x : 2, y : 2, ease : Elastic.easeOut});
+			var _g = 0;
+			while(_g < 8) {
+				var i = _g++;
+				var v = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_int([1200]);
+				zero_utilities__$Vec2_Vec2_$Impl_$.set_angle(v,i * 360 / 8);
+				_gthis.poofs.fire({ position : zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([App.i.renderer.width / 2 + 16,App.i.renderer.height * 0.3]), velocity : v, timer : 1});
+			}
+			return;
+		});
 		zero_utilities_Timer.get(1.75,function() {
 			var hi1 = new PIXI.extras.BitmapText("Hi Score: " + hi,{ font : "MainText", tint : 16777215});
 			hi1.anchor.set(0.5);
@@ -65,7 +93,7 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 			TweenMax.to(hi1.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut, delay : 0.25});
 			_gthis.addChild(hi1);
 			var retry = new objects_Button({ color : zero_utilities__$Color_Color_$Impl_$.from_array_int([1,1,1,1]), text_color : zero_utilities__$Color_Color_$Impl_$.PICO_8_BLUE, text : "RETRY", on_tap : function() {
-				window.document.location.reload();
+				_gthis.reload();
 				return;
 			}});
 			retry.position.set(App.i.renderer.width / 2,App.i.renderer.height - 128);
@@ -73,6 +101,10 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 			TweenMax.to(retry.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut});
 			return _gthis.addChild(retry);
 		});
+	}
+	,reload: function() {
+		App.i.stage.removeChildren();
+		App.i.stage.addChild(new states_PlayState());
 	}
 	,__class__: states_PlayState
 	,__properties__: {set_score_amt:"set_score_amt"}
@@ -119,10 +151,10 @@ App.main = function() {
 		load_assets();
 	} else {
 		WebFont.load({ custom : { families : App.fonts, urls : ["include/fonts.css"]}, active : load_assets, inactive : function() {
-			haxe_Log.trace("uh oh",{ fileName : "src/App.hx", lineNumber : 41, className : "App", methodName : "main"});
+			haxe_Log.trace("uh oh",{ fileName : "src/App.hx", lineNumber : 48, className : "App", methodName : "main"});
 			return;
 		}, timeout : 1000, fontloading : function(family,fvd) {
-			haxe_Log.trace(family,{ fileName : "src/App.hx", lineNumber : 43, className : "App", methodName : "main"});
+			haxe_Log.trace(family,{ fileName : "src/App.hx", lineNumber : 50, className : "App", methodName : "main"});
 			return;
 		}});
 	}
@@ -2558,8 +2590,8 @@ var objects_Button = function(options) {
 	this.beginFill((Math.round(zero_utilities__$Color_Color_$Impl_$.get_red(this1) * 255) & 255) << 16 | (Math.round(zero_utilities__$Color_Color_$Impl_$.get_green(this1) * 255) & 255) << 8 | Math.round(zero_utilities__$Color_Color_$Impl_$.get_blue(this1) * 255) & 255);
 	this.drawRoundedRect(-objects_Button.button_width / 2,-objects_Button.button_height / 2,objects_Button.button_width,objects_Button.button_height,objects_Button.button_height / 2);
 	this.endFill();
-	var this11 = options.text_color;
-	var text = new PIXI.extras.BitmapText(options.text,{ font : "MainText", tint : (Math.round(zero_utilities__$Color_Color_$Impl_$.get_red(this11) * 255) & 255) << 16 | (Math.round(zero_utilities__$Color_Color_$Impl_$.get_green(this11) * 255) & 255) << 8 | Math.round(zero_utilities__$Color_Color_$Impl_$.get_blue(this11) * 255) & 255});
+	var this2 = options.text_color;
+	var text = new PIXI.extras.BitmapText(options.text,{ font : "MainText", tint : (Math.round(zero_utilities__$Color_Color_$Impl_$.get_red(this2) * 255) & 255) << 16 | (Math.round(zero_utilities__$Color_Color_$Impl_$.get_green(this2) * 255) & 255) << 8 | Math.round(zero_utilities__$Color_Color_$Impl_$.get_blue(this2) * 255) & 255});
 	text.anchor.set(0.55);
 	this.addChild(text);
 	this.interactive = true;
@@ -2598,23 +2630,37 @@ objects_Player.prototype = $extend(PIXI.Graphics.prototype,{
 	,first_jump: null
 	,state: null
 	,set_state: function(v) {
-		haxe_Log.trace(v,{ fileName : "src/objects/Player.hx", lineNumber : 23, className : "objects.Player", methodName : "set_state"});
+		haxe_Log.trace(v,{ fileName : "src/objects/Player.hx", lineNumber : 24, className : "objects.Player", methodName : "set_state"});
 		switch(v._hx_index) {
 		case 0:
 			TweenMax.to(this.scale,0.4,{ x : 1, y : 1, ease : Elastic.easeOut});
+			var v1 = zero_utilities__$Vec2_Vec2_$Impl_$.get(500);
+			zero_utilities__$Vec2_Vec2_$Impl_$.set_angle(v1,45.);
+			states_PlayState.instance.poofs.fire({ position : zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([this.x,this.y]),zero_utilities__$Vec2_Vec2_$Impl_$.multiply_f(zero_utilities__$Vec2_Vec2_$Impl_$.get(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(v1),zero_utilities__$Vec2_Vec2_$Impl_$.get_y(v1)),0.1)),zero_utilities__$Vec2_Vec2_$Impl_$.from_array_int([0,48])), timer : 0.5, velocity : zero_utilities__$Vec2_Vec2_$Impl_$.multiply(v1,zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([1,0.25]))});
+			var v2 = zero_utilities__$Vec2_Vec2_$Impl_$.get(500);
+			zero_utilities__$Vec2_Vec2_$Impl_$.set_angle(v2,135.);
+			states_PlayState.instance.poofs.fire({ position : zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([this.x,this.y]),zero_utilities__$Vec2_Vec2_$Impl_$.multiply_f(zero_utilities__$Vec2_Vec2_$Impl_$.get(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(v2),zero_utilities__$Vec2_Vec2_$Impl_$.get_y(v2)),0.1)),zero_utilities__$Vec2_Vec2_$Impl_$.from_array_int([0,48])), timer : 0.5, velocity : zero_utilities__$Vec2_Vec2_$Impl_$.multiply(v2,zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([1,0.25]))});
+			var v3 = zero_utilities__$Vec2_Vec2_$Impl_$.get(500);
+			zero_utilities__$Vec2_Vec2_$Impl_$.set_angle(v3,225.);
+			states_PlayState.instance.poofs.fire({ position : zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([this.x,this.y]),zero_utilities__$Vec2_Vec2_$Impl_$.multiply_f(zero_utilities__$Vec2_Vec2_$Impl_$.get(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(v3),zero_utilities__$Vec2_Vec2_$Impl_$.get_y(v3)),0.1)),zero_utilities__$Vec2_Vec2_$Impl_$.from_array_int([0,48])), timer : 0.5, velocity : zero_utilities__$Vec2_Vec2_$Impl_$.multiply(v3,zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([1,0.25]))});
+			var v4 = zero_utilities__$Vec2_Vec2_$Impl_$.get(500);
+			zero_utilities__$Vec2_Vec2_$Impl_$.set_angle(v4,315.);
+			states_PlayState.instance.poofs.fire({ position : zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.add(zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([this.x,this.y]),zero_utilities__$Vec2_Vec2_$Impl_$.multiply_f(zero_utilities__$Vec2_Vec2_$Impl_$.get(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(v4),zero_utilities__$Vec2_Vec2_$Impl_$.get_y(v4)),0.1)),zero_utilities__$Vec2_Vec2_$Impl_$.from_array_int([0,48])), timer : 0.5, velocity : zero_utilities__$Vec2_Vec2_$Impl_$.multiply(v4,zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([1,0.25]))});
 			break;
 		case 1:
 			break;
 		case 2:
-			zero_utilities__$Vec2_Vec2_$Impl_$.set_x(this.velocity,this.fall_dir == objects_IncomingDirection.LEFT ? -50 : 50);
-			zero_utilities__$Vec2_Vec2_$Impl_$.set_y(this.velocity,-500);
+			zero_utilities__$Vec2_Vec2_$Impl_$.set_x(this.velocity,this.fall_dir == objects_IncomingDirection.LEFT ? -200 : 200);
+			zero_utilities__$Vec2_Vec2_$Impl_$.set_y(this.velocity,-800);
 			TweenMax.to(this,1,{ rotation : this.fall_dir == objects_IncomingDirection.LEFT ? -1 : 1});
 			zero_utilities_Timer.get(2,function() {
 				states_PlayState.instance.end();
 				return;
 			});
+			this.sprite.texture = PIXI.Texture.fromImage("images/marshmallow_1.png");
 			break;
 		case 3:
+			this.sprite.texture = PIXI.Texture.fromImage("images/marshmallow_1.png");
 			zero_utilities_Timer.get(2,function() {
 				states_PlayState.instance.end();
 				return;
@@ -2673,7 +2719,7 @@ objects_Player.prototype = $extend(PIXI.Graphics.prototype,{
 	}
 	,do_first_jump: function() {
 		this.first_jump = false;
-		TweenMax.to(states_PlayState.instance.score.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut});
+		states_PlayState.instance.begin();
 	}
 	,fall: function() {
 		if(zero_utilities__$Vec2_Vec2_$Impl_$.get_y(this.velocity) < 0) {
@@ -2827,7 +2873,78 @@ objects_Stack.prototype = $extend(PIXI.Container.prototype,{
 		if(!this.has_moved) {
 			return true;
 		}
-		return Math.abs(this.top_item.x) < objects_StackItem.item_width / 2;
+		var solid = Math.abs(this.top_item.x) < objects_StackItem.item_width / 2;
+		if(Math.abs(this.top_item.x) < 16) {
+			this.shoot_confetti();
+		}
+		return solid;
+	}
+	,shoot_confetti: function() {
+		var _g = states_PlayState.instance;
+		_g.set_score_amt(_g.score_amt + 9);
+		var _g1 = 0;
+		while(_g1 < 16) {
+			var i = _g1++;
+			var min = -20;
+			var max = null;
+			if(min == null) {
+				min = 0;
+			}
+			var v = Math.random();
+			var min1 = 1600;
+			var max1 = null;
+			if(min1 == null) {
+				min1 = 0;
+			}
+			var v1 = Math.random();
+			var v2 = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([min + v * ((max == null ? 20 : max) - min),-(min1 + v1 * ((max1 == null ? 3000 : max1) - min1))]);
+			var tmp = states_PlayState.instance.confetti;
+			var def_max = App.i.renderer.width;
+			var max2 = null;
+			var tmp1 = Math.random();
+			var def_max1 = App.i.renderer.height;
+			var max3 = null;
+			var tmp2 = Math.random();
+			tmp.fire({ position : zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([tmp1 * (max2 == null ? def_max : max2),tmp2 * (max3 == null ? def_max1 : max3)]), velocity : v2, timer : 0.25});
+		}
+		zero_utilities_Timer.get(0.4,function() {
+			var _g11 = 0;
+			while(_g11 < 48) {
+				var i1 = _g11++;
+				var min2 = 200;
+				var max4 = null;
+				if(min2 == null) {
+					min2 = 0;
+				}
+				var v3 = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([min2 + Math.random() * ((max4 == null ? 400 : max4) - min2)]);
+				var min3 = 45;
+				if(min3 == null) {
+					min3 = 0;
+				}
+				var r = 0.0;
+				var _g2 = 0;
+				var _g12 = 2;
+				while(_g2 < _g12) {
+					var i2 = _g2++;
+					r += Math.random();
+				}
+				r /= 2;
+				zero_utilities__$Vec2_Vec2_$Impl_$.set_angle(v3,min3 + r * (135 - min3));
+				var tmp3 = states_PlayState.instance.confetti;
+				var def_max2 = App.i.renderer.width;
+				var max5 = null;
+				var tmp4 = Math.random();
+				var def_max3 = App.i.renderer.height;
+				var min4 = -512;
+				var max6 = null;
+				if(min4 == null) {
+					min4 = 0;
+				}
+				var tmp5 = Math.random();
+				tmp3.fire({ position : zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([tmp4 * (max5 == null ? def_max2 : max5),min4 + tmp5 * ((max6 == null ? def_max3 : max6) - min4)]), velocity : v3, timer : 1.5});
+			}
+			return;
+		});
 	}
 	,cancel_tween: function() {
 		var _gthis = this;
@@ -2891,6 +3008,205 @@ objects_StackItem.__super__ = PIXI.Graphics;
 objects_StackItem.prototype = $extend(PIXI.Graphics.prototype,{
 	played: null
 	,__class__: objects_StackItem
+});
+var particles_Confetti = function() {
+	PIXI.Container.call(this);
+};
+$hxClasses["particles.Confetti"] = particles_Confetti;
+particles_Confetti.__name__ = "particles.Confetti";
+particles_Confetti.__super__ = PIXI.Container;
+particles_Confetti.prototype = $extend(PIXI.Container.prototype,{
+	make: function() {
+		var p = new particles_ConfettiPiece();
+		this.addChild(p);
+		return p;
+	}
+	,get: function() {
+		zero_extensions_ArrayExt.shuffle(this.children);
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var child = _g1[_g];
+			++_g;
+			if(!child.visible) {
+				return child;
+			}
+		}
+		return this.make();
+	}
+	,fire: function(options) {
+		this.get().fire(options);
+	}
+	,__class__: particles_Confetti
+});
+var particles_ConfettiPiece = function() {
+	this.colors = [11035901,2739711,7929668,16740749,16645994,16777215];
+	PIXI.Graphics.call(this);
+	var array = this.colors;
+	var def_max = array.length;
+	var max = null;
+	this.beginFill(array[Math.random() * (max == null ? def_max : max) | 0]);
+	this.drawCircle(0,0,8);
+	this.endFill();
+	this.visible = false;
+	zero_utilities_EventBus.register_listener($bind(this,this.update),"update");
+};
+$hxClasses["particles.ConfettiPiece"] = particles_ConfettiPiece;
+particles_ConfettiPiece.__name__ = "particles.ConfettiPiece";
+particles_ConfettiPiece.__super__ = PIXI.Graphics;
+particles_ConfettiPiece.prototype = $extend(PIXI.Graphics.prototype,{
+	colors: null
+	,velocity: null
+	,fire: function(options) {
+		var _gthis = this;
+		haxe_Log.trace("confetti!",{ fileName : "src/particles/Confetti.hx", lineNumber : 37, className : "particles.ConfettiPiece", methodName : "fire"});
+		this.visible = true;
+		this.alpha = 0;
+		TweenMax.to(this,options.timer * 0.5,{ alpha : 1, onComplete : function() {
+			return zero_utilities_Timer.get(options.timer * 0.5,function() {
+				return TweenMax.to(_gthis,0.5,{ alpha : 0, onComplete : function() {
+					return _gthis.visible = false;
+				}});
+			});
+		}});
+		this.position.set(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(options.position),zero_utilities__$Vec2_Vec2_$Impl_$.get_y(options.position));
+		this.velocity = options.velocity;
+	}
+	,update: function(dt) {
+		if(!this.visible) {
+			return;
+		}
+		this.x += zero_utilities__$Vec2_Vec2_$Impl_$.get_x(this.velocity) * dt;
+		this.y += zero_utilities__$Vec2_Vec2_$Impl_$.get_y(this.velocity) * dt;
+		var _g = this.velocity;
+		zero_utilities__$Vec2_Vec2_$Impl_$.set_y(_g,zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g) + 500 * dt);
+	}
+	,__class__: particles_ConfettiPiece
+});
+var particles_Poofs = function() {
+	PIXI.Container.call(this);
+};
+$hxClasses["particles.Poofs"] = particles_Poofs;
+particles_Poofs.__name__ = "particles.Poofs";
+particles_Poofs.__super__ = PIXI.Container;
+particles_Poofs.prototype = $extend(PIXI.Container.prototype,{
+	i: null
+	,make: function() {
+		var p = new particles_Poof();
+		this.addChild(p);
+		return p;
+	}
+	,get: function() {
+		zero_extensions_ArrayExt.shuffle(this.children);
+		var _g = 0;
+		var _g1 = this.children;
+		while(_g < _g1.length) {
+			var child = _g1[_g];
+			++_g;
+			if(!child.visible) {
+				return child;
+			}
+		}
+		return this.make();
+	}
+	,fire: function(options) {
+		this.get().fire(options);
+	}
+	,__class__: particles_Poofs
+});
+var particles_Poof = function() {
+	this.acceleration = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([]);
+	this.velocity = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([]);
+	PIXI.Sprite.call(this,PIXI.Texture.fromImage("images/poof_" + particles_Poof.poof_no++ % 6 + ".png"));
+	this.pivot.set(32,32);
+	this.visible = false;
+	zero_utilities_EventBus.register_listener($bind(this,this.update),"update");
+};
+$hxClasses["particles.Poof"] = particles_Poof;
+particles_Poof.__name__ = "particles.Poof";
+particles_Poof.__super__ = PIXI.Sprite;
+particles_Poof.prototype = $extend(PIXI.Sprite.prototype,{
+	velocity: null
+	,acceleration: null
+	,fire: function(options) {
+		var _gthis = this;
+		this.visible = true;
+		this.alpha = 0.5;
+		if(options.velocity == null) {
+			options.velocity = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_int([0,0]);
+		}
+		if(options.acceleration == null) {
+			options.acceleration = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_int([0,0]);
+		}
+		this.position.set(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(options.position),zero_utilities__$Vec2_Vec2_$Impl_$.get_y(options.position));
+		var this1 = this.velocity;
+		var v = options.velocity;
+		var x = zero_utilities__$Vec2_Vec2_$Impl_$.get_x(v);
+		var y = zero_utilities__$Vec2_Vec2_$Impl_$.get_y(v);
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		this1[0] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(x);
+		this1[1] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(y);
+		zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float(this1);
+		var this11 = this.acceleration;
+		var v1 = options.acceleration;
+		var x1 = zero_utilities__$Vec2_Vec2_$Impl_$.get_x(v1);
+		var y1 = zero_utilities__$Vec2_Vec2_$Impl_$.get_y(v1);
+		if(y1 == null) {
+			y1 = 0;
+		}
+		if(x1 == null) {
+			x1 = 0;
+		}
+		this11[0] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(x1);
+		this11[1] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(y1);
+		zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float(this11);
+		zero_utilities__$Vec2_Vec2_$Impl_$.pool.push(zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float(options.velocity));
+		options.velocity = null;
+		zero_utilities__$Vec2_Vec2_$Impl_$.pool.push(zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float(options.acceleration));
+		options.acceleration = null;
+		zero_utilities_Timer.get(options.timer,function() {
+			return TweenMax.to(_gthis,0.2,{ alpha : 0, onComplete : function() {
+				return _gthis.visible = false;
+			}});
+		});
+	}
+	,update: function(_) {
+		if(!this.visible) {
+			return;
+		}
+		this.x += zero_utilities__$Vec2_Vec2_$Impl_$.get_x(this.velocity) * _;
+		this.y += zero_utilities__$Vec2_Vec2_$Impl_$.get_y(this.velocity) * _;
+		var _g = this.velocity;
+		var v = Math.sqrt(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) * zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) + zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g) * zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g)) * 0.9;
+		var x = zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) / Math.sqrt(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) * zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) + zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g) * zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g));
+		var y = zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g) / Math.sqrt(zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) * zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) + zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g) * zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g));
+		if(y == null) {
+			y = 0;
+		}
+		if(x == null) {
+			x = 0;
+		}
+		_g[0] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(x);
+		_g[1] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(y);
+		zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float(_g);
+		var x1 = zero_utilities__$Vec2_Vec2_$Impl_$.get_x(_g) * v;
+		var y1 = zero_utilities__$Vec2_Vec2_$Impl_$.get_y(_g) * v;
+		if(y1 == null) {
+			y1 = 0;
+		}
+		if(x1 == null) {
+			x1 = 0;
+		}
+		_g[0] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(x1);
+		_g[1] = zero_utilities__$Vec2_Vec2_$Impl_$.zero(y1);
+		zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float(_g);
+	}
+	,__class__: particles_Poof
 });
 var util_ResizeManager = function() { };
 $hxClasses["util.ResizeManager"] = util_ResizeManager;
@@ -7220,7 +7536,7 @@ if(ArrayBuffer.prototype.slice == null) {
 	ArrayBuffer.prototype.slice = js_lib__$ArrayBuffer_ArrayBufferCompat.sliceImpl;
 }
 App.fonts = [];
-App.assets = ["images/oreo_0.png","images/oreo_1.png","images/oreo_2.png","images/marshmallow_0.png","images/floor.png","images/bg.png","images/score.fnt","images/text.fnt"];
+App.assets = ["images/oreo_0.png","images/oreo_1.png","images/oreo_2.png","images/marshmallow_0.png","images/marshmallow_1.png","images/floor.png","images/bg.png","images/poof_0.png","images/poof_1.png","images/poof_2.png","images/poof_3.png","images/poof_4.png","images/poof_5.png","images/score.fnt","images/text.fnt"];
 App.initial_obj = states_PlayState;
 DateTools.DAY_SHORT_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 DateTools.DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -7236,6 +7552,7 @@ objects_Button.button_height = 96;
 objects_StackItem.item_width = 256;
 objects_StackItem.item_height = 64;
 objects_StackItem.i = 0;
+particles_Poof.poof_no = 0;
 util_UpdateManager.last = 0.0;
 zero_utilities__$Vec4_Vec4_$Impl_$.epsilon = 1e-8;
 zero_utilities__$Vec4_Vec4_$Impl_$.pool = [];
