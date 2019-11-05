@@ -15,11 +15,12 @@ import pixi.core.display.Container;
 class Stack extends Container {
 
 	public var top_item:StackItem;
+	public var incoming_direction:IncomingDirection = LEFT;
 	var items:Array<StackItem> = [];
 	var state:StackState = SOLID;
-	public var incoming_direction:IncomingDirection = LEFT;
 	var top_pos:Float;
 	var item_tween:TweenMax;
+	var scale_tween:TweenMax;
 	var has_moved = false;
 
 	public function new() {
@@ -34,22 +35,25 @@ class Stack extends Container {
 	}
 
 	function add_floor() {
-		var floor = Sprite.fromImage('images/floor.png');
-		floor.scale.set(App.i.renderer.width/128, App.i.renderer.height/2/128);
-		floor.position.set(-App.i.renderer.width/2, -48);
-		/*var floor = new Graphics();
-		floor.beginFill(0x47C9F3);
-		floor.drawRect(-App.i.renderer.width, -128, App.i.renderer.width * 2, App.i.renderer.height);
-		floor.endFill();*/
+		var floor = Sprite.fromImage('images/floor_0.png');
+		floor.anchor.set(0.5, 0);
+		floor.position.set(0, -244);
+		floor.alpha = 0.5;
+		var resize = (?_) -> {
+			floor.scale.set(App.i.renderer.width/128, 10);
+		}
+		resize.register_listener('resize');
+		resize();
 		addChild(floor);
 	}
 
-	function add_items() {		
-		for (i in 0...10) items.push(addChild(new StackItem()));
+	function add_items() {
+		for (i in 0...32) items.push(addChild(new StackItem()));
 	}
 
 	public function move() {
 		if (!has_moved) return;
+		PlayState.instance.sky.move();
 		this.to(0.5, { y: y + StackItem.item_height, ease: Quad.easeOut });
 	}
 
@@ -59,11 +63,16 @@ class Stack extends Container {
 		items.unshift(item);
 		setChildIndex(item, children.length - 1);
 		top_pos -= StackItem.item_height;
-		item.position.set(get_item_x(incoming_direction), top_pos);
+		item.position.set(get_item_x(incoming_direction), top_pos - 32);
+		item.scale.set(0.75, 0.75);
+		item.scale.x = 0.75;
+		item.scale.y = 0.75;
+		trace('${item.scale.x}');
 		var time = 5.get_random_gaussian(1, 2);
 		item.rotation = incoming_direction == LEFT ? -0.1 : 0.1;
 		var rotation_target = incoming_direction == LEFT ? 0.1 : -0.1;
-		item_tween = item.to(time, { x: get_item_x(get_opposite_d()), rotation: rotation_target, ease: Linear.easeNone });
+		item_tween = item.to(time, { x: get_item_x(get_opposite_d()), y: item.y + 32, rotation: rotation_target, ease: Linear.easeNone });
+		scale_tween = item.scale.to(time, { x: 1.25, y: 1.25, ease: Linear.easeNone });
 		incoming_direction = get_opposite_d();
 		top_item = item;
 	}
@@ -111,10 +120,12 @@ class Stack extends Container {
 
 	public function cancel_tween() {
 		if (item_tween != null) item_tween.kill();
+		if (scale_tween != null) scale_tween.kill();
 		var i = 0.01;
 		var a = children.copy();
 		a.reverse();
-		for (child in a) Timer.get(i++ * 0.05, () -> {
+		var i = 0;
+		for (child in a) if (i++ < 10) Timer.get(i++ * 0.05, () -> {
 			if (child != top_item && items.indexOf(cast child) >= 0) {
 				child.scale.set(1.04);
 				child.scale.to(0.5, { x: 1, y: 1, ease: Elastic.easeOut });

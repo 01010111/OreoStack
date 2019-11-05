@@ -14,10 +14,11 @@ var states_PlayState = function() {
 	this.scale.set(0.5);
 	zero_utilities_EventBus.register_listener($bind(this,this.resize),"resize");
 	this.addChild(objects_Background.make());
+	this.addChild(this.sky = new objects_Sky());
 	this.addChild(this.stack = new objects_Stack());
 	this.addChild(this.poofs = new particles_Poofs());
 	this.addChild(this.player = new objects_Player());
-	this.addChild(this.fader = objects_Background.make());
+	this.addChild(this.fader = objects_Background.make_dark());
 	this.addChild(this.score = new PIXI.extras.BitmapText("0",{ font : "Oduda", align : "center"}));
 	this.addChild(this.confetti = new particles_Confetti());
 	this.addChild(this.get_instructions());
@@ -41,6 +42,7 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 	,fader: null
 	,poofs: null
 	,confetti: null
+	,sky: null
 	,set_score_amt: function(n) {
 		this.score.text = "" + n;
 		this.score.scale.set(1.5);
@@ -48,9 +50,15 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 		return this.score_amt = n;
 	}
 	,get_instructions: function() {
+		var _gthis = this;
 		this.instructions = new PIXI.extras.BitmapText("Tap anywhere to begin!",{ font : "MainText", tint : 547009});
 		this.instructions.anchor.set(0.5);
-		this.instructions.position.set(App.i.renderer.width / 2,App.i.renderer.height - 128);
+		var resize = function(_) {
+			_gthis.instructions.position.set(App.i.renderer.width / 2,App.i.renderer.height - 128);
+			return;
+		};
+		resize();
+		zero_utilities_EventBus.register_listener(resize,"resize");
 		this.instructions.scale.set(0);
 		TweenMax.to(this.instructions.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut, delay : 0.5});
 		return this.instructions;
@@ -60,6 +68,7 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 		TweenMax.to(this.instructions.scale,0.5,{ x : 0, y : 0, ease : Back.easeIn});
 	}
 	,resize: function(_) {
+		this.score.x = App.i.renderer.width / 2;
 	}
 	,end: function() {
 		var _gthis = this;
@@ -71,7 +80,7 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 			hi = this.score_amt;
 			js_Cookie.set("top",Std.string(this.score_amt),315360000);
 		}
-		haxe_Log.trace("hi score: " + hi,{ fileName : "src/states/PlayState.hx", lineNumber : 90, className : "states.PlayState", methodName : "end"});
+		haxe_Log.trace("hi score: " + hi,{ fileName : "src/states/PlayState.hx", lineNumber : 95, className : "states.PlayState", methodName : "end"});
 		TweenMax.to(this.fader,5,{ alpha : 0.75});
 		TweenMax.to(this.score,1,{ y : App.i.renderer.height * 0.3, ease : Back.easeOut});
 		zero_utilities_Timer.get(1,function() {
@@ -99,7 +108,8 @@ states_PlayState.prototype = $extend(PIXI.Container.prototype,{
 			retry.position.set(App.i.renderer.width / 2,App.i.renderer.height - 128);
 			retry.scale.set(0);
 			TweenMax.to(retry.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut});
-			return _gthis.addChild(retry);
+			_gthis.addChild(retry);
+			return _gthis.addChild(new objects_Info(App.i.renderer.width / 2,App.i.renderer.height * 0.6));
 		});
 	}
 	,reload: function() {
@@ -2575,12 +2585,23 @@ var objects_Background = function() { };
 $hxClasses["objects.Background"] = objects_Background;
 objects_Background.__name__ = "objects.Background";
 objects_Background.make = function() {
-	var sprite = PIXI.Sprite.fromImage("images/bg.png");
+	var sprite = PIXI.Sprite.fromImage("images/floor.png");
 	var resize = function(_) {
-		sprite.scale.set(_.width / 256,_.height / 256);
+		haxe_Log.trace("hi",{ fileName : "src/objects/Background.hx", lineNumber : 11, className : "objects.Background", methodName : "make"});
+		sprite.scale.set(App.i.renderer.width / 128,App.i.renderer.height / 128);
 		return;
 	};
-	resize({ width : App.i.renderer.width, height : App.i.renderer.height});
+	resize();
+	zero_utilities_EventBus.register_listener(resize,"resize");
+	return sprite;
+};
+objects_Background.make_dark = function() {
+	var sprite = PIXI.Sprite.fromImage("images/bg.png");
+	var resize = function(_) {
+		sprite.scale.set(App.i.renderer.width / 256,App.i.renderer.height / 256);
+		return;
+	};
+	resize();
 	zero_utilities_EventBus.register_listener(resize,"resize");
 	return sprite;
 };
@@ -2590,8 +2611,8 @@ var objects_Button = function(options) {
 	this.beginFill((Math.round(zero_utilities__$Color_Color_$Impl_$.get_red(this1) * 255) & 255) << 16 | (Math.round(zero_utilities__$Color_Color_$Impl_$.get_green(this1) * 255) & 255) << 8 | Math.round(zero_utilities__$Color_Color_$Impl_$.get_blue(this1) * 255) & 255);
 	this.drawRoundedRect(-objects_Button.button_width / 2,-objects_Button.button_height / 2,objects_Button.button_width,objects_Button.button_height,objects_Button.button_height / 2);
 	this.endFill();
-	var this2 = options.text_color;
-	var text = new PIXI.extras.BitmapText(options.text,{ font : "MainText", tint : (Math.round(zero_utilities__$Color_Color_$Impl_$.get_red(this2) * 255) & 255) << 16 | (Math.round(zero_utilities__$Color_Color_$Impl_$.get_green(this2) * 255) & 255) << 8 | Math.round(zero_utilities__$Color_Color_$Impl_$.get_blue(this2) * 255) & 255});
+	var this11 = options.text_color;
+	var text = new PIXI.extras.BitmapText(options.text,{ font : "MainText", tint : (Math.round(zero_utilities__$Color_Color_$Impl_$.get_red(this11) * 255) & 255) << 16 | (Math.round(zero_utilities__$Color_Color_$Impl_$.get_green(this11) * 255) & 255) << 8 | Math.round(zero_utilities__$Color_Color_$Impl_$.get_blue(this11) * 255) & 255});
 	text.anchor.set(0.55);
 	this.addChild(text);
 	this.interactive = true;
@@ -2607,6 +2628,288 @@ objects_Button.__super__ = PIXI.Graphics;
 objects_Button.prototype = $extend(PIXI.Graphics.prototype,{
 	__class__: objects_Button
 });
+var zero_extensions_ArrayExt = function() { };
+$hxClasses["zero.extensions.ArrayExt"] = zero_extensions_ArrayExt;
+zero_extensions_ArrayExt.__name__ = "zero.extensions.ArrayExt";
+zero_extensions_ArrayExt.strings_to_ints = function(array) {
+	var _g = [];
+	var _g1 = 0;
+	while(_g1 < array.length) {
+		var s = array[_g1];
+		++_g1;
+		_g.push(Std.parseInt(s));
+	}
+	return _g;
+};
+zero_extensions_ArrayExt.contains = function(array,value) {
+	return array.indexOf(value) >= 0;
+};
+zero_extensions_ArrayExt.last = function(a) {
+	return a[a.length - 1];
+};
+zero_extensions_ArrayExt.get_random = function(array) {
+	var def_max = array.length;
+	var max = null;
+	return array[Math.random() * (max == null ? def_max : max) | 0];
+};
+zero_extensions_ArrayExt.shuffle = function(array) {
+	var _g = 0;
+	var _g1 = array.length;
+	while(_g < _g1) {
+		var i = _g++;
+		var def_max = array.length;
+		var max = null;
+		var j = Math.random() * (max == null ? def_max : max) | 0;
+		var a = array[i];
+		var b = array[j];
+		array[i] = b;
+		array[j] = a;
+	}
+	return array;
+};
+zero_extensions_ArrayExt.merge = function(a1,a2) {
+	var _g = 0;
+	while(_g < a2.length) {
+		var o = a2[_g];
+		++_g;
+		a1.push(o);
+	}
+	return a1;
+};
+zero_extensions_ArrayExt.flatten = function(a) {
+	var _g = [];
+	var _g1 = 0;
+	while(_g1 < a.length) {
+		var row = a[_g1];
+		++_g1;
+		var _g11 = 0;
+		while(_g11 < row.length) {
+			var e = row[_g11];
+			++_g11;
+			_g.push(e);
+		}
+	}
+	return _g;
+};
+zero_extensions_ArrayExt.expand = function(a,row_width) {
+	var out = [];
+	var _g = 0;
+	var _g1 = a.length;
+	while(_g < _g1) {
+		var i = _g++;
+		if(i % row_width == 0) {
+			out.push([]);
+		}
+		out[out.length - 1].push(a[i]);
+	}
+	return out;
+};
+zero_extensions_ArrayExt.flood_fill_2D = function(array,x,y,value) {
+	if(x < 0 || y < 0 || y >= array.length || x >= array[y].length) {
+		return;
+	}
+	var target_value = array[y][x];
+	var validate = function(x1,y1) {
+		if(!(x1 < 0 || y1 < 0 || y1 >= array.length || x1 >= array[y1].length)) {
+			return array[y1][x1] == target_value;
+		} else {
+			return false;
+		}
+	};
+	var queue = [{ x : x, y : y}];
+	while(queue.length > 0) {
+		var point = queue.shift();
+		array[point.y][point.x] = value;
+		if(validate(point.x,point.y - 1)) {
+			queue.push({ x : point.x, y : point.y - 1});
+		}
+		if(validate(point.x,point.y + 1)) {
+			queue.push({ x : point.x, y : point.y + 1});
+		}
+		if(validate(point.x - 1,point.y)) {
+			queue.push({ x : point.x - 1, y : point.y});
+		}
+		if(validate(point.x + 1,point.y)) {
+			queue.push({ x : point.x + 1, y : point.y});
+		}
+	}
+};
+zero_extensions_ArrayExt.flood_fill_1D = function(array,pos,value) {
+	if(pos < 0 || pos > array.length) {
+		return;
+	}
+	var target_value = array[pos];
+	var validate = function(pos1) {
+		if(!(pos1 < 0 || pos1 > array.length)) {
+			return array[pos1] == target_value;
+		} else {
+			return false;
+		}
+	};
+	var queue = [pos];
+	while(queue.length > 0) {
+		var pos2 = queue.shift();
+		array[pos2] = value;
+		if(validate(pos2 - 1)) {
+			queue.push(pos2 - 1);
+		}
+		if(validate(pos2 + 1)) {
+			queue.push(pos2 + 1);
+		}
+	}
+};
+zero_extensions_ArrayExt.heat_map = function(array,x,y,max_value) {
+	if(max_value == null) {
+		max_value = -1;
+	}
+	if(x < 0 || y < 0 || y >= array.length || x >= array[y].length) {
+		return [];
+	}
+	var value = -1;
+	var _g = [];
+	var _g1 = 0;
+	while(_g1 < array.length) {
+		var row = array[_g1];
+		++_g1;
+		var _g11 = [];
+		var _g2 = 0;
+		while(_g2 < row.length) {
+			var v = row[_g2];
+			++_g2;
+			_g11.push(0);
+		}
+		_g.push(_g11);
+	}
+	var map = _g;
+	var min = 0;
+	var target_value = array[y][x];
+	var validate = function(x1,y1) {
+		if(!(x1 < 0 || y1 < 0 || y1 >= array.length || x1 >= array[y1].length) && array[y1][x1] == target_value) {
+			return map[y1][x1] == 0;
+		} else {
+			return false;
+		}
+	};
+	var queue = [{ x : x, y : y, value : value}];
+	while(queue.length > 0) {
+		var point = queue.shift();
+		map[point.y][point.x] = point.value;
+		min = Math.round(Math.min(point.value,min));
+		if(validate(point.x,point.y - 1)) {
+			queue.push({ x : point.x, y : point.y - 1, value : point.value - 1});
+		}
+		if(validate(point.x,point.y + 1)) {
+			queue.push({ x : point.x, y : point.y + 1, value : point.value - 1});
+		}
+		if(validate(point.x - 1,point.y)) {
+			queue.push({ x : point.x - 1, y : point.y, value : point.value - 1});
+		}
+		if(validate(point.x + 1,point.y)) {
+			queue.push({ x : point.x + 1, y : point.y, value : point.value - 1});
+		}
+	}
+	var diff = max_value < 0 ? -min + 1 : -min + 1 - (-min - max_value);
+	var _g21 = 0;
+	var _g3 = map.length;
+	while(_g21 < _g3) {
+		var j = _g21++;
+		var _g22 = 0;
+		var _g31 = map[j].length;
+		while(_g22 < _g31) {
+			var i = _g22++;
+			if(map[j][i] != 0) {
+				map[j][i] = Math.round(Math.max(map[j][i] + diff,0));
+			}
+		}
+	}
+	return map;
+};
+zero_extensions_ArrayExt.get_xy = function(array,x,y) {
+	y = Math.floor(Math.min(Math.max(y,0),array.length - 1));
+	x = Math.floor(Math.min(Math.max(x,0),array[y].length - 1));
+	return array[y][x];
+};
+zero_extensions_ArrayExt.set_xy = function(array,x,y,value) {
+	y = Math.floor(Math.min(Math.max(y,0),array.length - 1));
+	x = Math.floor(Math.min(Math.max(x,0),array[y].length - 1));
+	array[y][x] = value;
+};
+zero_extensions_ArrayExt.median = function(array) {
+	return array[Math.floor(array.length * 0.5)];
+};
+zero_extensions_ArrayExt.equals = function(a1,a2) {
+	if(a1.length != a2.length) {
+		return false;
+	}
+	var _g = 0;
+	var _g1 = a1.length;
+	while(_g < _g1) {
+		var i = _g++;
+		if(a1[i] != a2[i]) {
+			return false;
+		}
+	}
+	return true;
+};
+zero_extensions_ArrayExt.remove_duplicates = function(arr) {
+	var unique = [];
+	var _g = 0;
+	while(_g < arr.length) {
+		var item = arr[_g];
+		++_g;
+		if(unique.indexOf(item) < 0) {
+			unique.push(item);
+		}
+	}
+	arr = unique;
+	return arr;
+};
+var objects_Info = function(x,y) {
+	this.padding = 64;
+	PIXI.Graphics.call(this);
+	var info = objects_Info.info_table.pop();
+	objects_Info.info_table.unshift(info);
+	haxe_Log.trace(info,{ fileName : "src/objects/Info.hx", lineNumber : 25, className : "objects.Info", methodName : "new"});
+	var text = this.get_text(info,App.i.renderer.width - this.padding * 2);
+	text.anchor.set(0.5);
+	text.y -= 4;
+	text.scale.set((App.i.renderer.width - this.padding * 4) / (App.i.renderer.width - this.padding * 2));
+	var this1 = zero_utilities__$Color_Color_$Impl_$.PICO_8_BLUE;
+	this.beginFill((Math.round(zero_utilities__$Color_Color_$Impl_$.get_red(this1) * 255) & 255) << 16 | (Math.round(zero_utilities__$Color_Color_$Impl_$.get_green(this1) * 255) & 255) << 8 | Math.round(zero_utilities__$Color_Color_$Impl_$.get_blue(this1) * 255) & 255);
+	var size = zero_utilities__$Vec2_Vec2_$Impl_$.from_array_float([App.i.renderer.width - this.padding * 2,text.height + this.padding * 2]);
+	this.drawRoundedRect(-zero_utilities__$Vec2_Vec2_$Impl_$.get_x(size) / 2,-zero_utilities__$Vec2_Vec2_$Impl_$.get_y(size) / 2,zero_utilities__$Vec2_Vec2_$Impl_$.get_x(size),zero_utilities__$Vec2_Vec2_$Impl_$.get_y(size),16);
+	this.endFill();
+	this.addChild(text);
+	this.scale.set(0);
+	TweenMax.to(this.scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut, delay : 0.25});
+	this.position.set(x,y);
+};
+$hxClasses["objects.Info"] = objects_Info;
+objects_Info.__name__ = "objects.Info";
+objects_Info.__super__ = PIXI.Graphics;
+objects_Info.prototype = $extend(PIXI.Graphics.prototype,{
+	padding: null
+	,get_text: function(text,max_width) {
+		var style = { font : "MainText"};
+		var out = new PIXI.extras.BitmapText("",style);
+		var test = new PIXI.extras.BitmapText("",style);
+		var _g = 0;
+		var _g1 = text.split(" ");
+		while(_g < _g1.length) {
+			var word = _g1[_g];
+			++_g;
+			test.text += "" + word + " ";
+			if(test.width > max_width) {
+				out.text += "\n" + word + " ";
+				test.text = out.text;
+			} else {
+				out.text = test.text;
+			}
+		}
+		return out;
+	}
+	,__class__: objects_Info
+});
 var objects_Player = function() {
 	this.state = objects_PlayerState.LANDED;
 	this.first_jump = true;
@@ -2617,6 +2920,7 @@ var objects_Player = function() {
 	this.sprite = PIXI.Sprite.fromImage("images/marshmallow_0.png");
 	this.sprite.anchor.set(0.5);
 	this.addChild(this.sprite);
+	zero_utilities_EventBus.register_listener($bind(this,this.resize),"resize");
 	this.position.set(App.i.renderer.width / 2,App.i.get_midscreen());
 };
 $hxClasses["objects.Player"] = objects_Player;
@@ -2652,7 +2956,8 @@ objects_Player.prototype = $extend(PIXI.Graphics.prototype,{
 		case 2:
 			zero_utilities__$Vec2_Vec2_$Impl_$.set_x(this.velocity,this.fall_dir == objects_IncomingDirection.LEFT ? -200 : 200);
 			zero_utilities__$Vec2_Vec2_$Impl_$.set_y(this.velocity,-800);
-			TweenMax.to(this,1,{ rotation : this.fall_dir == objects_IncomingDirection.LEFT ? -1 : 1});
+			TweenMax.to(this,1.5,{ rotation : this.fall_dir == objects_IncomingDirection.LEFT ? -1 : 1});
+			TweenMax.to(this.scale,1.5,{ x : 2, y : 2});
 			zero_utilities_Timer.get(2,function() {
 				states_PlayState.instance.end();
 				return;
@@ -2668,6 +2973,9 @@ objects_Player.prototype = $extend(PIXI.Graphics.prototype,{
 			break;
 		}
 		return this.state = v;
+	}
+	,resize: function(_) {
+		this.x = App.i.renderer.width / 2;
 	}
 	,register_events: function() {
 		var _gthis = this;
@@ -2774,11 +3082,104 @@ var objects_PlayerState = $hxEnums["objects.PlayerState"] = { __ename__ : "objec
 	,FALLING: {_hx_index:3,__enum__:"objects.PlayerState",toString:$estr}
 };
 objects_PlayerState.__empty_constructs__ = [objects_PlayerState.LANDED,objects_PlayerState.JUMPING,objects_PlayerState.KNOCKED,objects_PlayerState.FALLING];
+var objects_Sky = function() {
+	PIXI.Container.call(this);
+	this.moon_x = App.i.renderer.width / 4;
+	this.moon_y = -128;
+	var _g = 0;
+	while(_g < 32) {
+		var i = _g++;
+		var def_max = App.i.renderer.width;
+		var max = null;
+		var tmp = Math.random() * (max == null ? def_max : max);
+		var max1 = App.i.renderer.height * 2;
+		var min = 0;
+		if(min == null) {
+			min = 0;
+		}
+		var r = 0.0;
+		var _g1 = 0;
+		var _g11 = 2;
+		while(_g1 < _g11) {
+			var i1 = _g1++;
+			r += Math.random();
+		}
+		r /= 2;
+		var tmp1 = -(min + r * (max1 - min)) + 128;
+		var min1 = 8;
+		var iterations = 4;
+		if(iterations == null) {
+			iterations = 2;
+		}
+		if(min1 == null) {
+			min1 = 0;
+		}
+		var r1 = 0.0;
+		var _g2 = 0;
+		var _g12 = iterations;
+		while(_g2 < _g12) {
+			var i2 = _g2++;
+			r1 += Math.random();
+		}
+		r1 /= iterations;
+		this.add_star(tmp,tmp1,min1 + r1 * (32 - min1) | 0);
+	}
+	this.add_moon(this.moon_x,this.moon_y);
+	this.alpha = 0.1;
+};
+$hxClasses["objects.Sky"] = objects_Sky;
+objects_Sky.__name__ = "objects.Sky";
+objects_Sky.__super__ = PIXI.Container;
+objects_Sky.prototype = $extend(PIXI.Container.prototype,{
+	moon_x: null
+	,moon_y: null
+	,add_moon: function(x,y) {
+		var moon = PIXI.Sprite.fromImage("images/moon.png");
+		moon.scale.set(0.4);
+		moon.anchor.set(0.5);
+		moon.position.set(x,y);
+		this.addChild(moon);
+	}
+	,add_star: function(x,y,size) {
+		if(Math.abs(x - this.moon_x) < 64 && Math.abs(y - this.moon_y) < 64) {
+			return;
+		}
+		var star = PIXI.Sprite.fromImage("images/star.png");
+		var min = 1;
+		var iterations = 2;
+		if(iterations == null) {
+			iterations = 2;
+		}
+		if(min == null) {
+			min = 0;
+		}
+		var r = 0.0;
+		var _g = 0;
+		var _g1 = iterations;
+		while(_g < _g1) {
+			var i = _g++;
+			r += Math.random();
+		}
+		r /= iterations;
+		var time = min + r * (3 - min);
+		star.anchor.set(0.5);
+		star.scale.set(0);
+		star.alpha = 0;
+		star.position.set(x,y);
+		TweenMax.to(star,time,{ alpha : 1, ease : Quad.easeIn, repeat : -1, yoyo : true});
+		TweenMax.to(star.scale,time,{ x : size / 32, y : size / 32, ease : Quad.easeIn, repeat : -1, yoyo : true});
+		this.addChild(star);
+	}
+	,move: function() {
+		TweenMax.to(this,0.5,{ y : this.y + objects_StackItem.item_height * 0.25, alpha : this.alpha + 0.05, ease : Quad.easeOut});
+	}
+	,__class__: objects_Sky
+});
 var objects_Stack = function() {
 	this.has_moved = false;
-	this.incoming_direction = objects_IncomingDirection.LEFT;
 	this.state = objects_StackState.SOLID;
 	this.items = [];
+	this.incoming_direction = objects_IncomingDirection.LEFT;
 	var _gthis = this;
 	PIXI.Container.call(this);
 	this.add_floor();
@@ -2796,19 +3197,49 @@ objects_Stack.__name__ = "objects.Stack";
 objects_Stack.__super__ = PIXI.Container;
 objects_Stack.prototype = $extend(PIXI.Container.prototype,{
 	top_item: null
+	,incoming_direction: null
 	,items: null
 	,state: null
-	,incoming_direction: null
 	,top_pos: null
 	,item_tween: null
+	,scale_tween: null
 	,has_moved: null
 	,add_floor: function() {
-		var floor = PIXI.Sprite.fromImage("images/floor.png");
-		floor.scale.set(App.i.renderer.width / 128,App.i.renderer.height / 2 / 128);
-		floor.position.set(-App.i.renderer.width / 2,-48);
+		var floor = PIXI.Sprite.fromImage("images/floor_0.png");
+		floor.anchor.set(0.5,0);
+		floor.position.set(0,-244);
+		floor.alpha = 0.5;
+		var resize = function(_) {
+			floor.scale.set(App.i.renderer.width / 128,10);
+			return;
+		};
+		zero_utilities_EventBus.register_listener(resize,"resize");
+		resize();
 		this.addChild(floor);
 	}
 	,add_items: function() {
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
+		this.items.push(this.addChild(new objects_StackItem()));
 		this.items.push(this.addChild(new objects_StackItem()));
 		this.items.push(this.addChild(new objects_StackItem()));
 		this.items.push(this.addChild(new objects_StackItem()));
@@ -2824,6 +3255,7 @@ objects_Stack.prototype = $extend(PIXI.Container.prototype,{
 		if(!this.has_moved) {
 			return;
 		}
+		states_PlayState.instance.sky.move();
 		TweenMax.to(this,0.5,{ y : this.y + objects_StackItem.item_height, ease : Quad.easeOut});
 	}
 	,move_top_item: function() {
@@ -2832,7 +3264,11 @@ objects_Stack.prototype = $extend(PIXI.Container.prototype,{
 		this.items.unshift(item);
 		this.setChildIndex(item,this.children.length - 1);
 		this.top_pos -= objects_StackItem.item_height;
-		item.position.set(this.get_item_x(this.incoming_direction),this.top_pos);
+		item.position.set(this.get_item_x(this.incoming_direction),this.top_pos - 32);
+		item.scale.set(0.75,0.75);
+		item.scale.x = 0.75;
+		item.scale.y = 0.75;
+		haxe_Log.trace("" + item.scale.x,{ fileName : "src/objects/Stack.hx", lineNumber : 70, className : "objects.Stack", methodName : "move_top_item"});
 		var min = 1;
 		var iterations = 2;
 		if(iterations == null) {
@@ -2852,7 +3288,8 @@ objects_Stack.prototype = $extend(PIXI.Container.prototype,{
 		var time = min + r * (5 - min);
 		item.rotation = this.incoming_direction == objects_IncomingDirection.LEFT ? -0.1 : 0.1;
 		var rotation_target = this.incoming_direction == objects_IncomingDirection.LEFT ? 0.1 : -0.1;
-		this.item_tween = TweenMax.to(item,time,{ x : this.get_item_x(this.get_opposite_d()), rotation : rotation_target, ease : Linear.easeNone});
+		this.item_tween = TweenMax.to(item,time,{ x : this.get_item_x(this.get_opposite_d()), y : item.y + 32, rotation : rotation_target, ease : Linear.easeNone});
+		this.scale_tween = TweenMax.to(item.scale,time,{ x : 1.25, y : 1.25, ease : Linear.easeNone});
 		this.incoming_direction = this.get_opposite_d();
 		this.top_item = item;
 	}
@@ -2951,22 +3388,28 @@ objects_Stack.prototype = $extend(PIXI.Container.prototype,{
 		if(this.item_tween != null) {
 			this.item_tween.kill();
 		}
+		if(this.scale_tween != null) {
+			this.scale_tween.kill();
+		}
 		var i = 0.01;
 		var a = this.children.slice();
 		a.reverse();
+		var i1 = 0;
 		var _g = 0;
 		while(_g < a.length) {
 			var child = [a[_g]];
 			++_g;
-			zero_utilities_Timer.get(i++ * 0.05,(function(child1) {
-				return function() {
-					if(child1[0] != _gthis.top_item && _gthis.items.indexOf(child1[0]) >= 0) {
-						child1[0].scale.set(1.04);
-						TweenMax.to(child1[0].scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut});
-					}
-					return;
-				};
-			})(child));
+			if(i1++ < 10) {
+				zero_utilities_Timer.get(i1++ * 0.05,(function(child1) {
+					return function() {
+						if(child1[0] != _gthis.top_item && _gthis.items.indexOf(child1[0]) >= 0) {
+							child1[0].scale.set(1.04);
+							TweenMax.to(child1[0].scale,0.5,{ x : 1, y : 1, ease : Elastic.easeOut});
+						}
+						return;
+					};
+				})(child));
+			}
 		}
 		if(this.has_moved) {
 			var _g1 = states_PlayState.instance;
@@ -3234,242 +3677,6 @@ util_UpdateManager.get_dt = function(time) {
 	var out = (time - util_UpdateManager.last) / 1000;
 	util_UpdateManager.last = time;
 	return out;
-};
-var zero_extensions_ArrayExt = function() { };
-$hxClasses["zero.extensions.ArrayExt"] = zero_extensions_ArrayExt;
-zero_extensions_ArrayExt.__name__ = "zero.extensions.ArrayExt";
-zero_extensions_ArrayExt.strings_to_ints = function(array) {
-	var _g = [];
-	var _g1 = 0;
-	while(_g1 < array.length) {
-		var s = array[_g1];
-		++_g1;
-		_g.push(Std.parseInt(s));
-	}
-	return _g;
-};
-zero_extensions_ArrayExt.contains = function(array,value) {
-	return array.indexOf(value) >= 0;
-};
-zero_extensions_ArrayExt.last = function(a) {
-	return a[a.length - 1];
-};
-zero_extensions_ArrayExt.get_random = function(array) {
-	var def_max = array.length;
-	var max = null;
-	return array[Math.random() * (max == null ? def_max : max) | 0];
-};
-zero_extensions_ArrayExt.shuffle = function(array) {
-	var _g = 0;
-	var _g1 = array.length;
-	while(_g < _g1) {
-		var i = _g++;
-		var def_max = array.length;
-		var max = null;
-		var j = Math.random() * (max == null ? def_max : max) | 0;
-		var a = array[i];
-		var b = array[j];
-		array[i] = b;
-		array[j] = a;
-	}
-	return array;
-};
-zero_extensions_ArrayExt.merge = function(a1,a2) {
-	var _g = 0;
-	while(_g < a2.length) {
-		var o = a2[_g];
-		++_g;
-		a1.push(o);
-	}
-	return a1;
-};
-zero_extensions_ArrayExt.flatten = function(a) {
-	var _g = [];
-	var _g1 = 0;
-	while(_g1 < a.length) {
-		var row = a[_g1];
-		++_g1;
-		var _g11 = 0;
-		while(_g11 < row.length) {
-			var e = row[_g11];
-			++_g11;
-			_g.push(e);
-		}
-	}
-	return _g;
-};
-zero_extensions_ArrayExt.expand = function(a,row_width) {
-	var out = [];
-	var _g = 0;
-	var _g1 = a.length;
-	while(_g < _g1) {
-		var i = _g++;
-		if(i % row_width == 0) {
-			out.push([]);
-		}
-		out[out.length - 1].push(a[i]);
-	}
-	return out;
-};
-zero_extensions_ArrayExt.flood_fill_2D = function(array,x,y,value) {
-	if(x < 0 || y < 0 || y >= array.length || x >= array[y].length) {
-		return;
-	}
-	var target_value = array[y][x];
-	var validate = function(x1,y1) {
-		if(!(x1 < 0 || y1 < 0 || y1 >= array.length || x1 >= array[y1].length)) {
-			return array[y1][x1] == target_value;
-		} else {
-			return false;
-		}
-	};
-	var queue = [{ x : x, y : y}];
-	while(queue.length > 0) {
-		var point = queue.shift();
-		array[point.y][point.x] = value;
-		if(validate(point.x,point.y - 1)) {
-			queue.push({ x : point.x, y : point.y - 1});
-		}
-		if(validate(point.x,point.y + 1)) {
-			queue.push({ x : point.x, y : point.y + 1});
-		}
-		if(validate(point.x - 1,point.y)) {
-			queue.push({ x : point.x - 1, y : point.y});
-		}
-		if(validate(point.x + 1,point.y)) {
-			queue.push({ x : point.x + 1, y : point.y});
-		}
-	}
-};
-zero_extensions_ArrayExt.flood_fill_1D = function(array,pos,value) {
-	if(pos < 0 || pos > array.length) {
-		return;
-	}
-	var target_value = array[pos];
-	var validate = function(pos1) {
-		if(!(pos1 < 0 || pos1 > array.length)) {
-			return array[pos1] == target_value;
-		} else {
-			return false;
-		}
-	};
-	var queue = [pos];
-	while(queue.length > 0) {
-		var pos2 = queue.shift();
-		array[pos2] = value;
-		if(validate(pos2 - 1)) {
-			queue.push(pos2 - 1);
-		}
-		if(validate(pos2 + 1)) {
-			queue.push(pos2 + 1);
-		}
-	}
-};
-zero_extensions_ArrayExt.heat_map = function(array,x,y,max_value) {
-	if(max_value == null) {
-		max_value = -1;
-	}
-	if(x < 0 || y < 0 || y >= array.length || x >= array[y].length) {
-		return [];
-	}
-	var value = -1;
-	var _g = [];
-	var _g1 = 0;
-	while(_g1 < array.length) {
-		var row = array[_g1];
-		++_g1;
-		var _g11 = [];
-		var _g2 = 0;
-		while(_g2 < row.length) {
-			var v = row[_g2];
-			++_g2;
-			_g11.push(0);
-		}
-		_g.push(_g11);
-	}
-	var map = _g;
-	var min = 0;
-	var target_value = array[y][x];
-	var validate = function(x1,y1) {
-		if(!(x1 < 0 || y1 < 0 || y1 >= array.length || x1 >= array[y1].length) && array[y1][x1] == target_value) {
-			return map[y1][x1] == 0;
-		} else {
-			return false;
-		}
-	};
-	var queue = [{ x : x, y : y, value : value}];
-	while(queue.length > 0) {
-		var point = queue.shift();
-		map[point.y][point.x] = point.value;
-		min = Math.round(Math.min(point.value,min));
-		if(validate(point.x,point.y - 1)) {
-			queue.push({ x : point.x, y : point.y - 1, value : point.value - 1});
-		}
-		if(validate(point.x,point.y + 1)) {
-			queue.push({ x : point.x, y : point.y + 1, value : point.value - 1});
-		}
-		if(validate(point.x - 1,point.y)) {
-			queue.push({ x : point.x - 1, y : point.y, value : point.value - 1});
-		}
-		if(validate(point.x + 1,point.y)) {
-			queue.push({ x : point.x + 1, y : point.y, value : point.value - 1});
-		}
-	}
-	var diff = max_value < 0 ? -min + 1 : -min + 1 - (-min - max_value);
-	var _g21 = 0;
-	var _g3 = map.length;
-	while(_g21 < _g3) {
-		var j = _g21++;
-		var _g22 = 0;
-		var _g31 = map[j].length;
-		while(_g22 < _g31) {
-			var i = _g22++;
-			if(map[j][i] != 0) {
-				map[j][i] = Math.round(Math.max(map[j][i] + diff,0));
-			}
-		}
-	}
-	return map;
-};
-zero_extensions_ArrayExt.get_xy = function(array,x,y) {
-	y = Math.floor(Math.min(Math.max(y,0),array.length - 1));
-	x = Math.floor(Math.min(Math.max(x,0),array[y].length - 1));
-	return array[y][x];
-};
-zero_extensions_ArrayExt.set_xy = function(array,x,y,value) {
-	y = Math.floor(Math.min(Math.max(y,0),array.length - 1));
-	x = Math.floor(Math.min(Math.max(x,0),array[y].length - 1));
-	array[y][x] = value;
-};
-zero_extensions_ArrayExt.median = function(array) {
-	return array[Math.floor(array.length * 0.5)];
-};
-zero_extensions_ArrayExt.equals = function(a1,a2) {
-	if(a1.length != a2.length) {
-		return false;
-	}
-	var _g = 0;
-	var _g1 = a1.length;
-	while(_g < _g1) {
-		var i = _g++;
-		if(a1[i] != a2[i]) {
-			return false;
-		}
-	}
-	return true;
-};
-zero_extensions_ArrayExt.remove_duplicates = function(arr) {
-	var unique = [];
-	var _g = 0;
-	while(_g < arr.length) {
-		var item = arr[_g];
-		++_g;
-		if(unique.indexOf(item) < 0) {
-			unique.push(item);
-		}
-	}
-	arr = unique;
-	return arr;
 };
 var zero_extensions_EnumExt = function() { };
 $hxClasses["zero.extensions.EnumExt"] = zero_extensions_EnumExt;
@@ -7549,6 +7756,7 @@ StringTools.winMetaCharacters = haxe_SysTools.winMetaCharacters;
 StringTools.MIN_SURROGATE_CODE_POINT = 65536;
 objects_Button.button_width = 512;
 objects_Button.button_height = 96;
+objects_Info.info_table = zero_extensions_ArrayExt.shuffle(["Did you know that if you stacked every Oreo cookie ever eaten, they would reach the moon ten times over?","Landing on an Oreo perfectly will get you 10 points instead of one!","You can tap to jump, but did you know you can hold your finger down to jump higher?","The Oreo cookie celebrated its hundredth birthday in 2012!","You would need about 250 million Oreo cookies placed side by side to go around the moon!"]);
 objects_StackItem.item_width = 256;
 objects_StackItem.item_height = 64;
 objects_StackItem.i = 0;

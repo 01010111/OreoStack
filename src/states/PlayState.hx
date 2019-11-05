@@ -3,6 +3,7 @@ package states;
 import zero.utilities.Vec2;
 import js.Cookie;
 import objects.Background;
+import objects.Sky;
 import pixi.core.sprites.Sprite;
 import js.Browser;
 import js.html.Document;
@@ -28,6 +29,7 @@ class PlayState extends Container {
 	public var fader:Sprite;
 	public var poofs:Poofs;
 	public var confetti:Confetti;
+	public var sky:Sky;
 	function set_score_amt(n:Int):Int {
 		score.text = '$n';
 		score.scale.set(1.5);
@@ -41,10 +43,11 @@ class PlayState extends Container {
 		scale.set(0.5);
 		resize.register_listener('resize');
 		addChild(objects.Background.make());
+		addChild(sky = new Sky());
 		addChild(stack = new objects.Stack());
 		addChild(poofs = new Poofs());
 		addChild(player = new objects.Player());
-		addChild(fader = Background.make());
+		addChild(fader = Background.make_dark());
 		addChild(score = new BitmapText('0', {
 			font: 'Oduda',
 			align: CENTER
@@ -65,7 +68,9 @@ class PlayState extends Container {
 			tint: 0x0858c1,
 		});
 		instructions.anchor.set(0.5);
-		instructions.position.set(App.i.renderer.width/2, App.i.renderer.height - 128);
+		var resize = (?_) -> instructions.position.set(App.i.renderer.width/2, App.i.renderer.height - 128);
+		resize();
+		resize.register_listener('resize');
 		instructions.scale.set(0);
 		instructions.scale.to(0.5, { x: 1, y: 1, ease: Elastic.easeOut, delay: 0.5 });
 		return instructions;
@@ -77,7 +82,7 @@ class PlayState extends Container {
 	}
 
 	public function resize(?_:{width:Float, height:Float}) {
-		
+		score.x = App.i.renderer.width/2;
 	}
 
 	public function end() {
@@ -122,6 +127,7 @@ class PlayState extends Container {
 			retry.scale.set(0);
 			retry.scale.to(0.5, { x: 1, y: 1, ease: Elastic.easeOut });
 			addChild(retry);
+			addChild(new objects.Info(App.i.renderer.width/2, App.i.renderer.height * 0.6));
 		});
 	}
 

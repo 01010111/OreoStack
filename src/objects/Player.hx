@@ -38,7 +38,8 @@ class Player extends Graphics {
 			case KNOCKED:
 				velocity.x = fall_dir == LEFT ? -200 : 200;
 				velocity.y = -800;
-				this.to(1, { rotation: fall_dir == LEFT ? -1 : 1 });
+				this.to(1.5, { rotation: fall_dir == LEFT ? -1 : 1 });
+				scale.to(1.5, { x: 2, y: 2 });
 				Timer.get(2, () -> PlayState.instance.end());
 				sprite.texture = Texture.fromImage('images/marshmallow_1.png');
 			case FALLING:
@@ -56,7 +57,12 @@ class Player extends Graphics {
 		sprite.anchor.set(0.5);
 		addChild(sprite);
 
+		resize.register_listener('resize');
 		position.set(App.i.renderer.width/2, App.i.get_midscreen());
+	}
+
+	function resize(?_) {
+		x = App.i.renderer.width/2;
 	}
 
 	function register_events() {
